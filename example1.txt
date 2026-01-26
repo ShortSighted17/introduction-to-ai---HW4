@@ -1,0 +1,23 @@
+; Example 1: Assignment example graph
+; This is the example from the assignment specification
+; Graph with 5 vertices, 2 uncertain edges, 1 amphibian kit
+
+#V 5    ; number of vertices n in graph (from 1 to n)
+
+#E1 1 2 W3       ; Edge from vertex 1 to vertex 2, weight 3
+#E2 2 3 W2 F 0.2 ; Edge from vertex 2 to vertex 3, weight 2, probability of flooding 0.2
+#E3 3 4 W3 F 0.3 ; Edge from vertex 3 to vertex 4, weight 3, probability of flooding 0.3
+#E4 4 5 W1       ; Edge from vertex 4 to vertex 5, weight 1
+#E5 2 4 W4       ; Edge from vertex 2 to vertex 4, weight 4
+
+#K1 1            ; Amphibian kit at vertex 1
+#EC 2            ; Takes 2 units of time to equip an amphibian kit
+#UC 1            ; and 1 unit of time to unequip
+#FF 3            ; Movement with amphibian kit is 3 times as slow as without
+
+; Observation capability (additional requirement)
+; From vertex 2, the agent can observe edge 3's status for cost 1
+#O V2 E3 1
+
+#Start 1
+#Target 5

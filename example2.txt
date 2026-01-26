@@ -1,0 +1,19 @@
+; Example 2: Simple test case
+; Minimal graph with just 3 vertices and 1 uncertain edge
+; Good for debugging and understanding the MDP structure
+
+#V 3    ; 3 vertices
+
+#E1 1 2 W2 F 0.5 ; Edge from 1 to 2, weight 2, 50% chance of flooding
+#E2 2 3 W1       ; Edge from 2 to 3, weight 1, no flooding possible
+
+; No amphibian kit available - agent must handle flooding by alternate routes
+; But there's no alternate route, so this tests what happens when stuck
+
+#Start 1
+#Target 3
+
+; Note: With 50% flood probability on E1, the agent should:
+; - Try to traverse E1 (will learn its status)
+; - If clear: continue to target via E2
+; - If flooded: cannot proceed (stuck - no kit available)

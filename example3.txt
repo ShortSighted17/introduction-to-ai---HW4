@@ -1,0 +1,35 @@
+; Example 3: More complex scenario with observations
+; This demonstrates the observation action feature (additional requirement)
+; The agent can pay to observe distant edges before committing to a path
+
+#V 4    ; 4 vertices forming a diamond shape
+
+; Diamond graph:
+;       2
+;      / \
+;     1   4 (target)
+;      \ /
+;       3
+
+#E1 1 2 W2 F 0.4 ; Edge 1-2, weight 2, 40% flood chance
+#E2 2 4 W2 F 0.3 ; Edge 2-4, weight 2, 30% flood chance  
+#E3 1 3 W2 F 0.3 ; Edge 1-3, weight 2, 30% flood chance
+#E4 3 4 W2 F 0.4 ; Edge 3-4, weight 2, 40% flood chance
+
+#K1 1            ; Kit available at start
+#EC 3            ; Expensive to equip (3 time units)
+#UC 1            ; Cheap to unequip (1 time unit)
+#FF 2            ; 2x slower with kit
+
+; Observation capabilities (additional requirement)
+; From vertex 1, can observe the status of edges at the far end
+#O V1 E2 1       ; From V1, observe E2 status for cost 1
+#O V1 E4 1       ; From V1, observe E4 status for cost 1
+
+#Start 1
+#Target 4
+
+; Strategy analysis:
+; - Without observations: agent must commit to a path without knowing if far edges are flooded
+; - With observations: agent can pay 1-2 units to scout before moving
+; - Expected behavior: depending on costs, agent might observe before deciding which path

@@ -1,43 +1,3 @@
-"""
-Value Iteration Solver for Hurricane Evacuation Belief-State MDP
-
-This module implements Value Iteration to compute the optimal policy
-for minimizing expected time to reach the target.
-
-VALUE ITERATION ALGORITHM:
-==========================
-
-The Bellman equation for minimizing expected cost:
-
-    V*(s) = 0                                           if s is terminal
-    V*(s) = min_a { C(s,a) + Σ_s' P(s'|s,a) V*(s') }   otherwise
-
-Where:
-- V*(s) is the optimal value (minimum expected cost) from state s
-- C(s,a) is the immediate cost of action a in state s
-- P(s'|s,a) is the transition probability to state s'
-- The sum is over all possible next states s'
-
-For probabilistic transitions (e.g., unknown edge flooding), we compute
-the expected cost across all outcomes.
-
-The algorithm iterates:
-1. Initialize V(s) = 0 for all states
-2. Repeat until convergence:
-   - For each state s:
-     - For each action a available in s:
-       - Compute Q(s,a) = C(s,a) + Σ_s' P(s'|s,a) V(s')
-     - Update V(s) = min_a Q(s,a)
-     - Record optimal action π*(s) = argmin_a Q(s,a)
-3. Return V and π*
-
-CONVERGENCE:
-============
-For this problem (finite states, positive costs, guaranteed reachability),
-value iteration is guaranteed to converge. We stop when the maximum
-change in value across all states is below a threshold (epsilon).
-"""
-
 from typing import Dict, List, Tuple, Optional, Set
 from dataclasses import dataclass
 from belief_state import BeliefState, EdgeStatus
@@ -46,38 +6,13 @@ from mdp import HurricaneMDP, Action, ActionType, Transition
 
 @dataclass
 class PolicyEntry:
-    """
-    Entry in the computed policy.
-    
-    Stores the optimal action and expected value for a single state.
-    Also tracks whether this state is reachable from the initial state.
-    """
     optimal_action: Optional[Action]  # None for terminal states
     expected_value: float             # Expected cost to reach target
     is_reachable: bool               # Can this state be reached from start?
 
 
 class ValueIterationSolver:
-    """
-    Solves the Hurricane Evacuation MDP using Value Iteration.
-    
-    The solver computes:
-    - V(s): Expected cost (time) to reach target from each state
-    - π(s): Optimal action to take in each state
-    
-    Since we're minimizing cost (time), lower values are better.
-    Terminal states (at target) have value 0.
-    """
-    
     def __init__(self, mdp: HurricaneMDP, epsilon: float = 1e-6, max_iterations: int = 10000):
-        """
-        Initialize the solver.
-        
-        Args:
-            mdp: The Hurricane Evacuation MDP to solve
-            epsilon: Convergence threshold - stop when max value change < epsilon
-            max_iterations: Maximum iterations to prevent infinite loops
-        """
         self.mdp = mdp
         self.epsilon = epsilon
         self.max_iterations = max_iterations
@@ -92,12 +27,6 @@ class ValueIterationSolver:
         self.converged = False
     
     def solve(self, verbose: bool = True) -> Dict[BeliefState, PolicyEntry]:
-        """
-        Run value iteration to find the optimal policy.
-        
-        Returns:
-            Dictionary mapping each state to its PolicyEntry
-        """
         if verbose:
             print("\n" + "=" * 60)
             print("RUNNING VALUE ITERATION")
@@ -109,7 +38,7 @@ class ValueIterationSolver:
             print(f"Total belief states: {len(all_states)}")
         
         # Initialize values
-        # Terminal states have value 0; others start at infinity (we'll use a large number)
+        # Terminal states have value 0; others start at infinity
         for state in all_states:
             if self.mdp.is_terminal(state):
                 self.values[state] = 0.0
@@ -182,17 +111,6 @@ class ValueIterationSolver:
         return result
     
     def _compute_best_action(self, state: BeliefState) -> Tuple[float, Optional[Action]]:
-        """
-        Compute the best action and its expected cost for a state.
-        
-        Evaluates Q(s,a) for all available actions and returns the minimum.
-        
-        Args:
-            state: Current belief state
-            
-        Returns:
-            (best_value, best_action) tuple
-        """
         actions = self.mdp.get_available_actions(state)
         
         if not actions:
@@ -212,13 +130,6 @@ class ValueIterationSolver:
         return best_value, best_action
     
     def _compute_q_value(self, state: BeliefState, action: Action) -> float:
-        """
-        Compute Q(s, a) - the expected cost of taking action a in state s.
-        
-        Q(s,a) = Σ_s' P(s'|s,a) * (C(s,a,s') + V(s'))
-        
-        Where C(s,a,s') is the cost of the transition.
-        """
         transitions = self.mdp.get_transitions(state, action)
         
         expected_cost = 0.0
@@ -230,12 +141,6 @@ class ValueIterationSolver:
         return expected_cost
     
     def _compute_reachable_states(self):
-        """
-        Compute which states are reachable from the initial state.
-        
-        Uses BFS/DFS to explore all states reachable through any sequence of actions.
-        This considers all possible outcomes of probabilistic transitions.
-        """
         self.reachable_states = set()
         
         # We need to consider multiple possible initial states because
@@ -258,13 +163,6 @@ class ValueIterationSolver:
                         queue.append(trans.next_state)
     
     def _get_possible_initial_states(self) -> List[BeliefState]:
-        """
-        Get all possible initial belief states.
-        
-        At the start, edges adjacent to the starting vertex are revealed,
-        but we don't know their status until runtime. So there are multiple
-        possible initial states corresponding to different flooding patterns.
-        """
         base_initial = self.mdp.get_initial_state()
         
         # Find edges that are revealed at the start location
@@ -302,12 +200,6 @@ class ValueIterationSolver:
         return possible_states
     
     def get_expected_cost_from_start(self) -> float:
-        """
-        Get the expected cost (time) to reach target from the start.
-        
-        This averages over all possible initial states weighted by their
-        probability (based on edge flooding probabilities).
-        """
         initial_states = self._get_possible_initial_states()
         
         if len(initial_states) == 1:
@@ -335,12 +227,6 @@ class ValueIterationSolver:
         return total
     
     def print_policy(self, full: bool = False):
-        """
-        Print the computed policy.
-        
-        Args:
-            full: If True, print ALL states. If False, only reachable states.
-        """
         print("\n" + "=" * 60)
         print("COMPUTED POLICY")
         print("=" * 60)
@@ -378,9 +264,6 @@ class ValueIterationSolver:
 
 def print_state_values(solver: ValueIterationSolver, 
                        group_by_location: bool = True):
-    """
-    Print state values in a more readable format, optionally grouped by location.
-    """
     print("\n" + "=" * 60)
     print("STATE VALUES")
     print("=" * 60)
@@ -421,40 +304,3 @@ def print_state_values(solver: ValueIterationSolver,
                            key=lambda s: (s.location, s.has_kit_equipped)):
             value = solver.values.get(state, float('inf'))
             print(f"  {state}: V = {value:.4f}")
-
-
-# ============================================================
-# TEST CODE
-# ============================================================
-
-if __name__ == "__main__":
-    from parser import parse_file, print_graph_data
-    from mdp import HurricaneMDP
-    
-    # Simple test case
-    test_input = """
-#V 3
-#E1 1 2 W2 F 0.3
-#E2 2 3 W1
-#Start 1
-#Target 3
-"""
-    
-    with open("test_vi.txt", "w") as f:
-        f.write(test_input)
-    
-    print("=" * 60)
-    print("VALUE ITERATION TEST")
-    print("=" * 60)
-    
-    graph = parse_file("test_vi.txt")
-    print_graph_data(graph)
-    
-    mdp = HurricaneMDP(graph)
-    mdp.print_mdp_info()
-    
-    solver = ValueIterationSolver(mdp)
-    policy = solver.solve(verbose=True)
-    
-    solver.print_policy(full=False)
-    print_state_values(solver, group_by_location=True)

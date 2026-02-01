@@ -1,30 +1,3 @@
-"""
-Main Program for Assignment 4: Hurricane Evacuation Decision Problem
-
-This is the main entry point that:
-1. Reads the input file and validates the graph
-2. Constructs the belief-state MDP
-3. Solves the MDP using value iteration
-4. Allows interactive exploration of the policy
-5. Runs simulations to demonstrate the policy in action
-
-USAGE:
-======
-    python main.py [input_file]
-    
-If no input file is provided, prompts the user for one.
-
-FEATURES:
-=========
-- Full printout of computed value function and optimal policy
-- Interactive simulation runs with randomly generated flooding
-- Statistics from multiple simulation runs
-- Detailed step-by-step execution display
-
-This implements the Hurricane Evacuation problem as a belief-state MDP,
-which is a variant of the Canadian Traveler Problem (known to be PSPACE-complete).
-"""
-
 import sys
 import os
 from typing import Optional
@@ -37,23 +10,7 @@ from simulator import Simulator, print_world_state
 
 
 class HurricaneEvacuationSolver:
-    """
-    Main class that orchestrates the solution of the Hurricane Evacuation problem.
-    
-    This class:
-    1. Loads and validates the problem specification
-    2. Builds the MDP representation
-    3. Runs value iteration to find optimal policy
-    4. Provides interface for simulation and analysis
-    """
-    
     def __init__(self, file_path: str):
-        """
-        Initialize the solver from an input file.
-        
-        Args:
-            file_path: Path to the problem specification file
-        """
         self.file_path = file_path
         self.graph: Optional[GraphData] = None
         self.mdp: Optional[HurricaneMDP] = None
@@ -61,12 +18,6 @@ class HurricaneEvacuationSolver:
         self.simulator: Optional[Simulator] = None
     
     def load_and_validate(self) -> bool:
-        """
-        Load the graph from file and validate it.
-        
-        Returns:
-            True if loading and validation succeeded, False otherwise
-        """
         print("\n" + "=" * 60)
         print("LOADING PROBLEM SPECIFICATION")
         print("=" * 60)
@@ -94,12 +45,6 @@ class HurricaneEvacuationSolver:
         return True
     
     def build_mdp(self) -> bool:
-        """
-        Construct the belief-state MDP from the graph.
-        
-        Returns:
-            True if MDP construction succeeded, False otherwise
-        """
         if self.graph is None:
             print("Error: Graph not loaded")
             return False
@@ -120,15 +65,6 @@ class HurricaneEvacuationSolver:
         return True
     
     def solve(self, verbose: bool = True) -> bool:
-        """
-        Run value iteration to compute the optimal policy.
-        
-        Args:
-            verbose: Whether to print progress information
-            
-        Returns:
-            True if solving succeeded, False otherwise
-        """
         if self.mdp is None:
             print("Error: MDP not constructed")
             return False
@@ -146,7 +82,6 @@ class HurricaneEvacuationSolver:
         return True
     
     def print_full_policy(self):
-        """Print the complete policy for all states."""
         if self.solver is None:
             print("Error: Problem not solved yet")
             return
@@ -154,7 +89,6 @@ class HurricaneEvacuationSolver:
         self.solver.print_policy(full=True)
     
     def print_reachable_policy(self):
-        """Print the policy for reachable states only."""
         if self.solver is None:
             print("Error: Problem not solved yet")
             return
@@ -162,7 +96,6 @@ class HurricaneEvacuationSolver:
         self.solver.print_policy(full=False)
     
     def print_state_values_grouped(self):
-        """Print state values grouped by location."""
         if self.solver is None:
             print("Error: Problem not solved yet")
             return
@@ -170,13 +103,6 @@ class HurricaneEvacuationSolver:
         print_state_values(self.solver, group_by_location=True)
     
     def run_single_simulation(self, seed: Optional[int] = None, verbose: bool = True):
-        """
-        Run a single simulation and display the results.
-        
-        Args:
-            seed: Random seed (None for random)
-            verbose: Whether to print step-by-step progress
-        """
         if self.simulator is None:
             print("Error: Problem not solved yet")
             return
@@ -196,12 +122,6 @@ class HurricaneEvacuationSolver:
         return steps, cost, success
     
     def run_multiple_simulations(self, num_simulations: int = 100):
-        """
-        Run multiple simulations and report statistics.
-        
-        Args:
-            num_simulations: Number of simulations to run
-        """
         if self.simulator is None:
             print("Error: Problem not solved yet")
             return
@@ -228,14 +148,6 @@ class HurricaneEvacuationSolver:
 
 
 def interactive_session(solver_instance: HurricaneEvacuationSolver):
-    """
-    Run an interactive session for exploring the policy and running simulations.
-    
-    Provides a command-line interface for:
-    - Viewing policy
-    - Running simulations
-    - Viewing statistics
-    """
     print("\n" + "=" * 60)
     print("INTERACTIVE SESSION")
     print("=" * 60)
@@ -304,7 +216,6 @@ def interactive_session(solver_instance: HurricaneEvacuationSolver):
 
 
 def print_help():
-    """Print available commands."""
     print("""
 Available Commands:
 -------------------
@@ -329,7 +240,6 @@ Display:
 
 
 def main():
-    """Main entry point for the Hurricane Evacuation Solver."""
     print("=" * 60)
     print("HURRICANE EVACUATION - BELIEF-STATE MDP SOLVER")
     print("Assignment 4: Decision-Making Under Uncertainty")
@@ -373,11 +283,6 @@ def main():
 
 
 def create_example_input() -> str:
-    """
-    Create an example input file for testing.
-    
-    This creates a small but interesting problem instance.
-    """
     example_content = """
 ; Example input for Hurricane Evacuation MDP
 ; Small graph with 2 uncertain edges and observation capability

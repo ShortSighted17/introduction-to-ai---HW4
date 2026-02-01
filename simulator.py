@@ -1,31 +1,3 @@
-"""
-Simulator for Hurricane Evacuation Problem
-
-This module implements simulation of the agent acting in randomly generated
-graph instances according to the computed policy.
-
-SIMULATION PROCESS:
-===================
-1. Generate a random "world" - determine which edges are actually flooded
-   based on their flood probabilities (Monte Carlo sampling)
-   
-2. Initialize the agent at the start vertex with the corresponding belief state
-   (edges visible from start are revealed according to the actual world)
-   
-3. Execute the policy:
-   - Look up the optimal action for current belief state
-   - Execute the action in the world
-   - Update belief state based on observations
-   - Repeat until reaching the target or getting stuck
-   
-4. Report the sequence of actions and total cost
-
-This allows us to:
-- Verify the policy works correctly
-- Observe how the agent behaves in different flooding scenarios
-- Compute empirical average cost across many simulations
-"""
-
 import random
 from typing import Dict, List, Tuple, Optional, Set
 from dataclasses import dataclass
@@ -37,21 +9,10 @@ from parser import GraphData
 
 @dataclass
 class WorldState:
-    """
-    Represents the "true" state of the world in a simulation.
-    
-    This is the actual configuration of flooding that the agent doesn't
-    initially know but discovers through observation.
-    
-    Attributes:
-        flooding: Dictionary mapping edge_id -> True if flooded
-        kit_locations: Set of vertices where kits are currently available
-    """
     flooding: Dict[int, bool]
     kit_locations: Set[int]
     
     def is_flooded(self, edge_id: int) -> bool:
-        """Check if an edge is flooded in this world."""
         return self.flooding.get(edge_id, False)
     
     def __repr__(self):
@@ -61,16 +22,6 @@ class WorldState:
 
 @dataclass 
 class SimulationStep:
-    """
-    Records a single step in a simulation.
-    
-    Attributes:
-        state_before: Belief state before the action
-        action: Action taken
-        cost: Cost (time) incurred
-        state_after: Belief state after the action
-        observations: What was learned (edge statuses revealed)
-    """
     state_before: BeliefState
     action: Action
     cost: float
@@ -79,41 +30,12 @@ class SimulationStep:
 
 
 class Simulator:
-    """
-    Simulates the agent navigating the graph according to a policy.
-    
-    The simulator:
-    1. Generates random world instances (edge flooding determined by probabilities)
-    2. Runs the agent through the world using the computed policy
-    3. Records the sequence of states and actions
-    4. Reports total cost and success/failure
-    """
-    
     def __init__(self, mdp: HurricaneMDP, solver: ValueIterationSolver):
-        """
-        Initialize the simulator.
-        
-        Args:
-            mdp: The Hurricane Evacuation MDP
-            solver: A solved ValueIterationSolver with the computed policy
-        """
         self.mdp = mdp
         self.solver = solver
         self.graph = mdp.graph
     
     def generate_world(self, seed: Optional[int] = None) -> WorldState:
-        """
-        Generate a random world instance.
-        
-        Each edge with non-zero flood probability is independently
-        flooded according to its probability.
-        
-        Args:
-            seed: Random seed for reproducibility (None for random)
-            
-        Returns:
-            WorldState with determined flooding pattern
-        """
         if seed is not None:
             random.seed(seed)
         
@@ -130,18 +52,6 @@ class Simulator:
         return WorldState(flooding, kit_locations)
     
     def get_initial_belief_state(self, world: WorldState) -> BeliefState:
-        """
-        Get the initial belief state given the actual world.
-        
-        At the start, the agent is at the starting vertex and observes
-        all edges incident to that vertex.
-        
-        Args:
-            world: The actual world state
-            
-        Returns:
-            Initial belief state with visible edges revealed
-        """
         start = self.graph.start_vertex
         
         # Start with all uncertain edges as UNKNOWN
@@ -160,21 +70,6 @@ class Simulator:
                        seed: Optional[int] = None,
                        max_steps: int = 1000,
                        verbose: bool = True) -> Tuple[List[SimulationStep], float, bool]:
-        """
-        Run a single simulation.
-        
-        Args:
-            world: World to simulate in (if None, generates randomly)
-            seed: Random seed if generating world
-            max_steps: Maximum steps before declaring failure
-            verbose: Whether to print step-by-step progress
-            
-        Returns:
-            Tuple of (steps, total_cost, success)
-            - steps: List of SimulationStep recording the trajectory
-            - total_cost: Total time cost incurred
-            - success: True if reached target, False if stuck or max_steps
-        """
         # Generate or use provided world
         if world is None:
             world = self.generate_world(seed)
@@ -238,17 +133,6 @@ class Simulator:
     
     def _execute_action(self, state: BeliefState, action: Action, 
                         world: WorldState) -> Tuple[BeliefState, float, Dict[int, EdgeStatus]]:
-        """
-        Execute an action in the world and return the result.
-        
-        Args:
-            state: Current belief state
-            action: Action to execute
-            world: The actual world state
-            
-        Returns:
-            (new_state, cost, observations) where observations shows revealed edges
-        """
         observations = {}
         
         if action.action_type == ActionType.TRAVERSE:
@@ -269,13 +153,6 @@ class Simulator:
     
     def _execute_traverse(self, state: BeliefState, edge_id: int,
                           world: WorldState) -> Tuple[BeliefState, float, Dict[int, EdgeStatus]]:
-        """
-        Execute a traverse action.
-        
-        If the edge is unknown, we first reveal its status.
-        If flooded without kit, we're blocked (stay in place).
-        Otherwise, we move to the other endpoint.
-        """
         edge = self.graph.edges[edge_id]
         current_status = state.get_edge_status(edge_id)
         observations = {}
@@ -316,11 +193,6 @@ class Simulator:
     
     def _execute_observe(self, state: BeliefState, edge_id: int,
                          world: WorldState) -> Tuple[BeliefState, float, Dict[int, EdgeStatus]]:
-        """
-        Execute an observe action (additional requirement).
-        
-        The agent pays the observation cost and learns the edge's actual status.
-        """
         # Find the observation cost
         obs_cost = 0
         for obs in self.graph.get_observations_at_vertex(state.location):
@@ -338,7 +210,6 @@ class Simulator:
         return new_state, obs_cost, observations
     
     def _print_step(self, step_num: int, step: SimulationStep):
-        """Print a single simulation step."""
         print(f"\nStep {step_num}:")
         print(f"  State: V{step.state_before.location}, "
               f"kit={'yes' if step.state_before.has_kit_equipped else 'no'}")
@@ -354,16 +225,6 @@ class Simulator:
     
     def run_multiple_simulations(self, num_simulations: int = 100,
                                   verbose: bool = False) -> Dict:
-        """
-        Run multiple simulations and compute statistics.
-        
-        Args:
-            num_simulations: Number of simulations to run
-            verbose: Whether to print each simulation
-            
-        Returns:
-            Dictionary with statistics
-        """
         costs = []
         successes = 0
         failures = 0
@@ -392,9 +253,6 @@ class Simulator:
 
 
 def print_world_state(world: WorldState, graph: GraphData):
-    """
-    Print a detailed view of the world state.
-    """
     print("\n" + "-" * 40)
     print("WORLD STATE (Ground Truth)")
     print("-" * 40)
@@ -407,72 +265,3 @@ def print_world_state(world: WorldState, graph: GraphData):
             print(f"  E{eid} ({edge.u}-{edge.v}): {status} {prob_str}")
     
     print(f"\nKit locations: {sorted(world.kit_locations) if world.kit_locations else 'None'}")
-
-
-# ============================================================
-# TEST CODE
-# ============================================================
-
-if __name__ == "__main__":
-    from parser import parse_file, print_graph_data
-    from mdp import HurricaneMDP
-    
-    # Test case with some uncertainty
-    test_input = """
-#V 4
-#E1 1 2 W2 F 0.4
-#E2 2 3 W1 F 0.3
-#E3 3 4 W1
-#E4 1 3 W3
-
-#K1 1
-#EC 2
-#UC 1
-#FF 2
-
-#Start 1
-#Target 4
-"""
-    
-    with open("test_sim.txt", "w") as f:
-        f.write(test_input)
-    
-    print("=" * 60)
-    print("SIMULATOR TEST")
-    print("=" * 60)
-    
-    graph = parse_file("test_sim.txt")
-    print_graph_data(graph)
-    
-    mdp = HurricaneMDP(graph)
-    mdp.print_mdp_info()
-    
-    # Solve the MDP
-    solver = ValueIterationSolver(mdp)
-    policy = solver.solve(verbose=True)
-    solver.print_policy(full=False)
-    
-    # Create simulator
-    sim = Simulator(mdp, solver)
-    
-    # Run a single simulation with a specific seed
-    print("\n" + "=" * 60)
-    print("SINGLE SIMULATION (seed=42)")
-    print("=" * 60)
-    
-    world = sim.generate_world(seed=42)
-    print_world_state(world, graph)
-    
-    steps, cost, success = sim.run_simulation(world=world, verbose=True)
-    
-    # Run multiple simulations
-    print("\n" + "=" * 60)
-    print("MULTIPLE SIMULATIONS (n=100)")
-    print("=" * 60)
-    
-    stats = sim.run_multiple_simulations(num_simulations=100, verbose=False)
-    print(f"\nStatistics:")
-    print(f"  Success rate: {stats['success_rate']*100:.1f}%")
-    print(f"  Average cost: {stats['average_cost']:.2f}")
-    print(f"  Min cost: {stats['min_cost']:.2f}")
-    print(f"  Max cost: {stats['max_cost']:.2f}")
